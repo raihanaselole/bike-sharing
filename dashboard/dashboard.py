@@ -2,13 +2,17 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 
 st.set_page_config(page_title="Bike Sharing Dashboard", layout="wide")
 
 # data
-day_df = pd.read_csv('main_data.csv')
-hour_df = pd.read_csv('hour_data.csv')
+
+BASE_DIR = os.path.dirname(__file__)
+
+day_df = pd.read_csv(os.path.join(BASE_DIR, 'main_data.csv'))
+hour_df = pd.read_csv(os.path.join(BASE_DIR, 'hour_data.csv'))
 
 day_df['dteday'] = pd.to_datetime(day_df['dteday'])
 hour_df['dteday'] = pd.to_datetime(hour_df['dteday'])
