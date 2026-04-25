@@ -4,116 +4,116 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
-
 st.set_page_config(page_title="Bike Sharing Dashboard", layout="wide")
-
-# data
 
 BASE_DIR = os.path.dirname(__file__)
 
+# data
 day_df = pd.read_csv(os.path.join(BASE_DIR, 'main_data.csv'))
 hour_df = pd.read_csv(os.path.join(BASE_DIR, 'hour_data.csv'))
 
 day_df['dteday'] = pd.to_datetime(day_df['dteday'])
 hour_df['dteday'] = pd.to_datetime(hour_df['dteday'])
 
-
 st.title("Bike Sharing Dashboard")
-st.markdown("Analisis Pola Penyewaan Sepeda Berdasarkan Waktu dan Cuaca")
+st.markdown("Analisis Pola Penyewaan Sepeda Berdasarkan Waktu, Cuaca, dan Faktor Lingkungan")
 
 # sidebar
 st.sidebar.header("Filter Data")
 
 year_filter = st.sidebar.selectbox("Pilih Tahun", options=[2011, 2012])
 
-filtered_day = day_df[day_df['yr'] == (year_filter - 2011)]
-filtered_hour = hour_df[hour_df['yr'] == (year_filter - 2011)]
+day_clean = day_df[day_df['yr'] == (year_filter - 2011)]
+hour_clean = hour_df[hour_df['yr'] == (year_filter - 2011)]
 
 # metric
 st.subheader("Summary Metrics")
 
 col1, col2, col3 = st.columns(3)
 
-col1.metric("Total Rentals", int(filtered_day['total_rentals'].sum()))
-col2.metric("Rata-rata Harian", int(filtered_day['total_rentals'].mean()))
-col3.metric("Max Rentals", int(filtered_day['total_rentals'].max()))
+col1.metric("Total Rentals", int(day_clean['total_rentals'].sum()))
+col2.metric("Rata-rata Harian", int(day_clean['total_rentals'].mean()))
+col3.metric("Max Rentals", int(day_clean['total_rentals'].max()))
 
-# Pola Jam
+# jam penyewaan
 st.subheader("Pola Penyewaan Berdasarkan Jam")
 
-hourly = filtered_hour.groupby('hr')['total_rentals'].mean()
+hourly_usage = hour_clean.groupby('hr')['total_rentals'].mean().reset_index()
 
-fig, ax = plt.subplots()
-ax.plot(hourly.index, hourly.values)
+fig, ax = plt.subplots(figsize=(10,5))
+sns.lineplot(data=hourly_usage, x='hr', y='total_rentals', ax=ax)
 ax.set_title("Rata-rata Penyewaan per Jam")
 ax.set_xlabel("Jam")
 ax.set_ylabel("Jumlah Penyewaan")
-
 st.pyplot(fig)
 
-# tingkat penyewaan sepeda hari kerja
-st.subheader("Hari Kerja vs Libur")
+# hari kerja dan hari libur
+st.subheader("Hari Kerja vs Hari Libur")
 
-working = filtered_day.groupby('workingday')['total_rentals'].mean()
+workingday_usage = day_clean.groupby('workingday')['total_rentals'].mean().reset_index()
 
 fig2, ax2 = plt.subplots()
-ax2.bar(working.index.astype(str), working.values)
+sns.barplot(data=workingday_usage, x='workingday', y='total_rentals', ax=ax2)
 ax2.set_title("Perbandingan Hari Kerja vs Libur")
 ax2.set_xlabel("Working Day (1=Ya, 0=Tidak)")
 ax2.set_ylabel("Jumlah Penyewaan")
-
 st.pyplot(fig2)
 
 # cuaca
 st.subheader("Pengaruh Cuaca")
 
-weather = filtered_day.groupby('weather_label')['total_rentals'].mean()
+weather_usage = day_clean.groupby('weather_label')['total_rentals'].mean().reset_index()
 
 fig3, ax3 = plt.subplots()
-ax3.bar(weather.index, weather.values)
+sns.barplot(data=weather_usage, x='weather_label', y='total_rentals', ax=ax3)
 ax3.set_title("Pengaruh Cuaca terhadap Penyewaan")
 ax3.set_ylabel("Jumlah Penyewaan")
-
+ax3.set_xlabel("Cuaca")
+ax3.tick_params(axis='x', rotation=30)
 st.pyplot(fig3)
 
-# korelasi lingkungan
+# korelasi
 st.subheader("Korelasi Faktor Lingkungan")
 
-corr = filtered_day[['temp','hum','windspeed','total_rentals']].corr()
+corr = day_clean[['temp','hum','windspeed','total_rentals']].corr()
 
 fig4, ax4 = plt.subplots()
-sns.heatmap(corr, annot=True, ax=ax4)
+sns.heatmap(corr, annot=True, cmap='coolwarm', ax=ax4)
 ax4.set_title("Correlation Matrix")
-
 st.pyplot(fig4)
 
-st.subheader("Kategori Tingkat Penyewaan")
+# musim
+st.subheader("Penyewaan Berdasarkan Musim")
 
-# buat kategori
-filtered_day['usage_level'] = pd.qcut(
-    filtered_day['total_rentals'],
-    q=3,
-    labels=['Low', 'Medium', 'High']
-)
-
-usage_dist = filtered_day['usage_level'].value_counts().sort_index()
+season_usage = day_clean.groupby('season_label')['total_rentals'].mean().reset_index()
 
 fig5, ax5 = plt.subplots()
-ax5.bar(usage_dist.index, usage_dist.values)
-ax5.set_title("Distribusi Tingkat Penyewaan")
-ax5.set_xlabel("Kategori")
-ax5.set_ylabel("Jumlah Hari")
-
+sns.barplot(data=season_usage, x='season_label', y='total_rentals', ax=ax5)
+ax5.set_title("Rata-rata Penyewaan per Musim")
+ax5.set_ylabel("Jumlah Penyewaan")
 st.pyplot(fig5)
 
-st.subheader("Analisis Penyewaan Berdasarkan Musim")
+# bulan
+st.subheader("Pola Penyewaan Bulanan")
 
-season_usage = filtered_day.groupby('season_label')['total_rentals'].mean()
+monthly_usage = day_clean.groupby('mnth')['total_rentals'].mean().reset_index()
 
 fig6, ax6 = plt.subplots()
-ax6.bar(season_usage.index, season_usage.values)
-ax6.set_title("Rata-rata Penyewaan per Musim")
+sns.lineplot(data=monthly_usage, x='mnth', y='total_rentals', marker='o', ax=ax6)
+ax6.set_title("Rata-rata Penyewaan per Bulan")
+ax6.set_xlabel("Bulan")
 ax6.set_ylabel("Jumlah Penyewaan")
-
 st.pyplot(fig6)
 
+# distribusi
+st.subheader("Distribusi Penyewaan")
+
+fig7, ax7 = plt.subplots()
+sns.histplot(day_clean['total_rentals'], kde=True, ax=ax7)
+ax7.set_title("Distribusi Total Penyewaan")
+st.pyplot(fig7)
+
+fig8, ax8 = plt.subplots()
+sns.boxplot(x=day_clean['total_rentals'], ax=ax8)
+ax8.set_title("Boxplot Total Penyewaan")
+st.pyplot(fig8)
